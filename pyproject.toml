@@ -1,0 +1,104 @@
+[project]
+name = "fake-news-detection"
+version = "0.1.0"
+description = "Evidence-backed fake news detection: LLM claim extraction plus RAG fact-checking over retrieved sources"
+readme = "README.md"
+requires-python = ">=3.10,<3.13"
+license = { file = "LICENSE" }
+
+# Runtime dependencies for the Approach 2 pipeline (app.py / main.py).
+# Every entry here is backed by an actual import in the codebase.
+dependencies = [
+    # --- Web API + static frontend ---
+    "flask>=3.1.0",
+    "flask-cors>=5.0.0",
+    "python-dotenv>=1.1.1",
+
+    # --- Article scraping ---
+    "requests>=2.32.4",
+    "beautifulsoup4>=4.13.4",
+    "lxml>=5.3.0",
+    "readability-lxml>=0.8.4.1",
+    "selenium>=4.27.0",
+    "pymupdf>=1.25.0",              # imported as `fitz`
+    "python-dateutil>=2.9.0",       # imported as `dateutil`
+
+    # --- Evidence search ---
+    "ddgs>=9.2.3",
+    "google-search-results>=2.4.2", # imported as `serpapi`
+
+    # --- LLM client ---
+    "groq>=0.29.0",
+
+    # --- NLP ---
+    "spacy>=3.7.5,<3.8",
+    "en-core-web-md",               # pinned via [tool.uv.sources] below
+    "en-core-web-sm",               # pinned via [tool.uv.sources] below
+    "nltk>=3.9.1",
+    "contractions>=0.1.73",
+    "textblob>=0.18.0",
+    "keybert>=0.9.0",
+    "scikit-learn>=1.6.1",
+    "numpy>=1.26",
+
+    # --- Embeddings + vector retrieval ---
+    "sentence-transformers>=5.0.0",
+    "faiss-cpu>=1.11.0",
+    "torch>=2.6.0",
+
+    # --- RAG document handling ---
+    "langchain-text-splitters>=0.3.0",
+    "fpdf2>=2.8.0",                 # imported as `fpdf`
+    "pypdf2>=3.0.1",
+
+    "tqdm>=4.67.1",
+]
+
+# Notebook-only dependencies for Approach 1 (Research/*.ipynb).
+# Install with: uv sync --group research
+[dependency-groups]
+research = [
+    "jupyter>=1.1.1",
+    "ipykernel>=6.29.5",
+    "pandas>=2.2.3",
+    "matplotlib>=3.9.0",
+    "seaborn>=0.13.2",
+    "wordcloud>=1.9.4",
+    "scipy>=1.14.0",
+    "joblib>=1.4.2",
+    "optuna>=4.1.0",
+    "xgboost>=2.1.0",
+    "textstat>=0.7.4",
+    "transformers>=4.53.1",
+    "datasets>=3.2.0",
+]
+dev = [
+    "ruff>=0.8.0",
+]
+
+[tool.uv]
+# This is an application, not an installable library: don't build/install the
+# project itself, just its dependencies.
+package = false
+
+[tool.uv.sources]
+# CUDA 12.4 build of torch for the local RTX 4060 (Ada / sm_89).
+# macOS has no CUDA wheels, so fall through to PyPI there.
+torch = [
+    { index = "pytorch-cu124", marker = "sys_platform == 'linux' or sys_platform == 'win32'" },
+]
+# spaCy pipelines are not on PyPI; pull the 3.7.x wheels that match spacy>=3.7.5,<3.8.
+# Declaring them here (rather than `spacy download`) keeps `uv sync` reproducible
+# and stops uv from pruning them as unmanaged packages.
+en-core-web-md = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_md-3.7.1/en_core_web_md-3.7.1-py3-none-any.whl" }
+en-core-web-sm = { url = "https://github.com/explosion/spacy-models/releases/download/en_core_web_sm-3.7.1/en_core_web_sm-3.7.1-py3-none-any.whl" }
+
+[[tool.uv.index]]
+name = "pytorch-cu124"
+url = "https://download.pytorch.org/whl/cu124"
+explicit = true
+
+[tool.ruff]
+target-version = "py310"
+line-length = 100
+extend-exclude = ["Research"]
